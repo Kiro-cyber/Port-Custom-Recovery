@@ -1,0 +1,28 @@
+name: Extract Boot Components
+
+on:
+  workflow_dispatch:
+    inputs:
+      boot_image_path:
+        description: 'Path to boot image'
+        required: true
+
+jobs:
+  extract-components:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Extract boot image components
+        run: |
+          chmod +x tools/magiskboot
+          ./tools/magiskboot unpack ${{ github.event.inputs.boot_image_path }}
+          mkdir -p output/extracted/
+          mv kernel ramdisk.cpio dtb output/extracted/ 2>/dev/null || true
+
+      - name: Upload extracted components
+        uses: actions/upload-artifact@v4
+        with:
+          name: extracted-boot-components
+          path: output/extracted/

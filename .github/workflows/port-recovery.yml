@@ -1,0 +1,47 @@
+name: Port Custom Recovery
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  port-recovery:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup environment
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y android-tools-mkbootimg android-tools-adb
+
+      - name: Extract recovery from source boot image
+        run: |
+          chmod +x scripts/extract_recovery.sh
+          ./scripts/extract_recovery.sh boot_images/source/boot.img
+
+      - name: Inject recovery into target boot image
+        run: |
+          chmod +x scripts/inject_recovery.sh
+          ./scripts/inject_recovery.sh \
+            boot_images/target/boot.img \
+            output/recovery.img \
+            output/new_boot.img
+
+      - name: Upload ported boot image
+        uses: actions/upload-artifact@v4
+        with:
+          name: ported-boot-image
+          path: output/new_boot.img
+          retention-days: 7
+
+      - name: Create release (optional)
+        if: github.ref == 'refs/heads/main'
+        uses: ncipollo/release-action@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          artifacts: output/new_boot.img
+          tag: v${{ github.run_number }}
+          name: "Ported Boot Image v${{ github.run_number }}"
