@@ -20,3 +20,4 @@ fi
 
 # Очистка временных файлов
 rm -f kernel kernel_dtb cmdline board base pagesize pagesize_kernel tags_addr kernel_offset ramdisk_offset second_offset dt_offset header_version os_version os_patch_level dtb
+chmod +x scripts/*.sh tools/*

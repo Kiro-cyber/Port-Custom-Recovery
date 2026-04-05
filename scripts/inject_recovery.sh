@@ -19,3 +19,4 @@ cp "$RECOVERY_IMAGE" ramdisk.cpio
 # Сохраняем результат
 mv new-boot.img "$OUTPUT_BOOT"
 echo "Ported boot image created: $OUTPUT_BOOT"
+chmod +x scripts/*.sh tools/*
