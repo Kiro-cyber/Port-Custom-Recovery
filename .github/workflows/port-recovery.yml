@@ -15,8 +15,10 @@ jobs:
       - name: Setup environment
         run: |
           sudo apt-get update
-          sudo apt-get install -y python3 python3-pip
-          pip3 install mkbootimg
+          # Устанавливаем необходимые инструменты из репозитория Ubuntu
+          sudo apt-get install -y mkbootimg android-sdk-platform-tools-common
+          # Убедимся, что папка output существует
+          mkdir -p output
 
       - name: Extract recovery from source boot image
         run: |
