@@ -30,7 +30,7 @@ jobs:
           git config --local --remove-section submodule.tools/mkbootimg 2>/dev/null || true
           git config --local --remove-section submodule.tools/mkbootimg.url 2>/dev/null || true
 
-      - name: Setup environment and build mkbootimg
+      - name: Setup environment
         run: |
           sudo apt-get update
           sudo apt-get install -y git make gcc g++ libssl-dev pkg-config abootimg android-sdk-libsparse-utils
@@ -115,5 +115,5 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           artifacts: output/new_boot.img
-          tag: v${{ github.run_number }}
-          name: "Ported Boot Image v${{ github.run_number }}"
+          tag: v${{ github.run_number }}-${{ github.run_attempt }}
+          name: "Ported Boot Image v${{ github.run_number }} (Attempt ${{ github.run_attempt }})"
