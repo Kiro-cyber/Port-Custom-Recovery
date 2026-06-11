@@ -10,12 +10,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
 
       - name: Setup environment
         run: |
           sudo apt-get update
-          sudo apt-get install -y android-tools-mkbootimg android-tools-adb
+          sudo apt-get install -y python3 python3-pip
+          pip3 install mkbootimg
 
       - name: Extract recovery from source boot image
         run: |
@@ -38,7 +39,7 @@ jobs:
           retention-days: 7
 
       - name: Create release (optional)
-        if: github.ref == 'refs/heads/main'
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
         uses: ncipollo/release-action@v1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
