@@ -14,12 +14,20 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Download magiskboot
+        run: |
+          mkdir -p tools
+          wget -O tools/magiskboot https://github.com/topjohnwu/Magisk/releases/download/v30.7/Magisk-v30.7.apk
+          unzip -j tools/Magisk-v30.7.apk lib/armeabi-v7a/libmagiskboot.so -d tools/
+          mv tools/libmagiskboot.so tools/magiskboot
+          chmod +x tools/magiskboot
+          rm tools/Magisk-v30.7.apk
+
       - name: Extract boot image components
         run: |
-          chmod +x tools/magiskboot
-          ./tools/magiskboot unpack ${{ github.event.inputs.boot_image_path }}
+          ./tools/magiskboot unpack "${{ github.event.inputs.boot_image_path }}"
           mkdir -p output/extracted/
-          mv kernel ramdisk.cpio dtb output/extracted/ 2>/dev/null || true
+          mv kernel ramdisk.cpio* dtb* output/extracted/ 2>/dev/null || true
 
       - name: Upload extracted components
         uses: actions/upload-artifact@v4
