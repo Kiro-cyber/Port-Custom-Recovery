@@ -17,16 +17,18 @@ jobs:
       - name: Download magiskboot
         run: |
           mkdir -p tools
-          wget -O tools/magiskboot https://github.com/topjohnwu/Magisk/releases/download/v30.7/Magisk-v30.7.apk
-          unzip -j tools/Magisk-v30.7.apk lib/armeabi-v7a/libmagiskboot.so -d tools/
+          # Используем версию 27.0 для примера. Проверьте актуальную версию на GitHub.
+          wget -L --progress=dot:mega -O tools/Magisk.apk https://github.com/topjohnwu/Magisk/releases/download/v27.0/Magisk-v27.0.apk
+          unzip -j tools/Magisk.apk lib/armeabi-v7a/libmagiskboot.so -d tools/
           mv tools/libmagiskboot.so tools/magiskboot
           chmod +x tools/magiskboot
-          rm tools/Magisk-v30.7.apk
+          rm tools/Magisk.apk
 
       - name: Extract boot image components
         run: |
           ./tools/magiskboot unpack "${{ github.event.inputs.boot_image_path }}"
           mkdir -p output/extracted/
+          # Перемещаем все возможные компоненты, игнорируя ошибки, если файла нет
           mv kernel ramdisk.cpio* dtb* output/extracted/ 2>/dev/null || true
 
       - name: Upload extracted components
