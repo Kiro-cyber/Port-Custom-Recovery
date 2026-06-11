@@ -9,25 +9,47 @@ on:
 
 jobs:
   extract-components:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          submodules: false
 
       - name: Download magiskboot
         run: |
           mkdir -p tools
-          wget -L --progress=dot:mega -O tools/Magisk.apk https://github.com/topjohnwu/Magisk/releases/download/v27.0/Magisk-v27.0.apk
-          unzip -j tools/Magisk.apk lib/armeabi-v7a/libmagiskboot.so -d tools/
+          # Используем стабильную версию Magisk
+          MAGISK_VERSION="27.0"
+          wget -L --progress=dot:mega -O /tmp/Magisk.apk \
+            "https://github.com/topjohnwu/Magisk/releases/download/v${MAGISK_VERSION}/Magisk-v${MAGISK_VERSION}.apk"
+          
+          # Извлекаем magiskboot из APK
+          unzip -j /tmp/Magisk.apk lib/armeabi-v7a/libmagiskboot.so -d tools/
           mv tools/libmagiskboot.so tools/magiskboot
           chmod +x tools/magiskboot
-          rm tools/Magisk.apk
+          rm /tmp/Magisk.apk
 
       - name: Extract boot image components
         run: |
+          # Проверяем наличие boot image
+          if [ ! -f "${{ github.event.inputs.boot_image_path }}" ]; then
+            echo "ERROR: Boot image not found at ${{ github.event.inputs.boot_image_path }}"
+            echo "Available files in workspace:"
+            find . -name "*.img" -o -name "*.bin" | head -20
+            exit 1
+          fi
+          
+          # Распаковываем boot image
           ./tools/magiskboot unpack "${{ github.event.inputs.boot_image_path }}"
+          
+          # Сохраняем извлеченные компоненты
           mkdir -p output/extracted/
           mv kernel ramdisk.cpio* dtb* output/extracted/ 2>/dev/null || true
+          
+          # Показываем, что извлекли
+          echo "Extracted components:"
+          ls -la output/extracted/
 
       - name: Upload extracted components
         uses: actions/upload-artifact@v4
