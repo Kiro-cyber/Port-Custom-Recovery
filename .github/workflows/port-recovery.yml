@@ -15,9 +15,18 @@ jobs:
       - name: Setup environment
         run: |
           sudo apt-get update
-          # Устанавливаем необходимые инструменты из репозитория Ubuntu
-          sudo apt-get install -y mkbootimg android-sdk-platform-tools-common
-          # Убедимся, что папка output существует
+          # Устанавливаем инструменты для работы с Android образами
+          sudo apt-get install -y android-sdk-libsparse-utils android-sdk-platform-tools-common
+          # Скачиваем mkbootimg из репозитория AOSP
+          git clone https://android.googlesource.com/platform/system/tools/mkbootimg --depth=1
+          cd mkbootimg
+          # Компилируем и устанавливаем
+          make
+          sudo cp mkbootimg /usr/local/bin/
+          sudo cp unpack_bootimg /usr/local/bin/
+          cd ..
+          rm -rf mkbootimg
+          # Создаем папку output
           mkdir -p output
 
       - name: Extract recovery from source boot image
