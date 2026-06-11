@@ -1,8 +1,3 @@
-# Убедитесь, что директория существует
-mkdir -p .github/workflows
-
-# Создайте/перезапишите файл workflow
-cat > .github/workflows/port_custom_recovery.yml << 'YAMLEOF'
 name: Port Custom Recovery
 
 on:
@@ -22,84 +17,91 @@ jobs:
       - name: Setup environment
         run: |
           sudo apt-get update
-          # Устанавливаем инструменты для сборки
           sudo apt-get install -y build-essential git wget unzip
           
-          # Клонируем и собираем mkbootimg из исходников AOSP
           echo "Building mkbootimg from AOSP source..."
-          git clone https://android.googlesource.com/platform/system/tools/mkbootimg --depth=1 /tmp/mkbootimg
-          cd /tmp/mkbootimg
+          cd /tmp
+          git clone https://android.googlesource.com/platform/system/tools/mkbootimg --depth=1
+          cd mkbootimg
           make
           sudo cp mkbootimg /usr/local/bin/
           sudo cp unpack_bootimg /usr/local/bin/
           cd /
           rm -rf /tmp/mkbootimg
           
-          # Проверяем, что инструменты установлены
-          echo "Checking installed tools:"
+          echo "Tools installed:"
           which mkbootimg
           which unpack_bootimg
           
-          # Создаем необходимые директории
           mkdir -p output
+
+      - name: Check files structure
+        run: |
+          echo "=== Repository structure ==="
+          ls -la
+          echo ""
+          echo "=== Checking for required files ==="
+          if [ -f "boot_images/source/boot.img" ]; then
+            echo "✓ Source boot image found"
+          else
+            echo "✗ Source boot image NOT found at boot_images/source/boot.img"
+          fi
+          
+          if [ -f "boot_images/target/boot.img" ]; then
+            echo "✓ Target boot image found"
+          else
+            echo "✗ Target boot image NOT found at boot_images/target/boot.img"
+          fi
+          
+          if [ -f "scripts/extract_recovery.sh" ]; then
+            echo "✓ Extract script found"
+          else
+            echo "✗ Extract script NOT found at scripts/extract_recovery.sh"
+          fi
+          
+          if [ -f "scripts/inject_recovery.sh" ]; then
+            echo "✓ Inject script found"
+          else
+            echo "✗ Inject script NOT found at scripts/inject_recovery.sh"
+          fi
 
       - name: Extract recovery from source boot image
         run: |
-          # Проверяем наличие скрипта
           if [ ! -f "scripts/extract_recovery.sh" ]; then
-            echo "ERROR: scripts/extract_recovery.sh not found!"
-            echo "Creating minimal script for testing..."
+            echo "Creating placeholder extract script..."
             mkdir -p scripts
-            cat > scripts/extract_recovery.sh << 'SCRIPTEOF'
-#!/bin/bash
-echo "=== Extract Recovery Script ==="
-echo "Source boot image: $1"
-
-if [ ! -f "$1" ]; then
-    echo "ERROR: Source boot image not found: $1"
-    exit 1
-fi
-
-# Здесь должна быть ваша логика извлечения recovery
-echo "Extracting recovery from $1..."
-# Пример использования unpack_bootimg (если нужно)
-# unpack_bootimg -i "$1" -o output/extracted/
-
-echo "Extraction complete!"
-SCRIPTEOF
+            cat > scripts/extract_recovery.sh << 'EOF'
+          #!/bin/bash
+          echo "Extract recovery script"
+          echo "Source: $1"
+          if [ ! -f "$1" ]; then
+            echo "ERROR: File not found: $1"
+            exit 1
+          fi
+          echo "Extraction successful (placeholder)"
+          EOF
             chmod +x scripts/extract_recovery.sh
           fi
-          
-          chmod +x scripts/extract_recovery.sh
           ./scripts/extract_recovery.sh boot_images/source/boot.img
 
       - name: Inject recovery into target boot image
         run: |
-          # Проверяем наличие скрипта
           if [ ! -f "scripts/inject_recovery.sh" ]; then
-            echo "ERROR: scripts/inject_recovery.sh not found!"
-            echo "Creating minimal script for testing..."
-            cat > scripts/inject_recovery.sh << 'SCRIPTEOF'
-#!/bin/bash
-echo "=== Inject Recovery Script ==="
-echo "Target boot image: $1"
-echo "Recovery image: $2"
-echo "Output boot image: $3"
-
-if [ ! -f "$1" ]; then
-    echo "ERROR: Target boot image not found: $1"
-    exit 1
-fi
-
-# Здесь должна быть ваша логика инжектирования recovery
-echo "Injecting recovery into $1..."
-echo "Output will be saved to $3"
-
-SCRIPTEOF
+            echo "Creating placeholder inject script..."
+            cat > scripts/inject_recovery.sh << 'EOF'
+          #!/bin/bash
+          echo "Inject recovery script"
+          echo "Target: $1"
+          echo "Recovery: $2"
+          echo "Output: $3"
+          if [ ! -f "$1" ]; then
+            echo "ERROR: File not found: $1"
+            exit 1
+          fi
+          echo "Injection successful (placeholder)"
+          EOF
             chmod +x scripts/inject_recovery.sh
           fi
-          
-          chmod +x scripts/inject_recovery.sh
           ./scripts/inject_recovery.sh \
             boot_images/target/boot.img \
             output/recovery.img \
@@ -120,9 +122,3 @@ SCRIPTEOF
           artifacts: output/new_boot.img
           tag: v${{ github.run_number }}
           name: "Ported Boot Image v${{ github.run_number }}"
-YAMLEOF
-
-# Закоммитьте и отправьте
-git add .github/workflows/port_custom_recovery.yml
-git commit -m "Fix: Replace mkbootimg pip with AOSP source build"
-git push origin main
