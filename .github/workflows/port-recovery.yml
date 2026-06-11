@@ -7,40 +7,75 @@ on:
 
 jobs:
   port-recovery:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          submodules: false  # Отключаем подмодули, чтобы избежать ошибок
 
       - name: Setup environment
         run: |
           sudo apt-get update
-          # Устанавливаем инструменты для работы с Android образами
-          sudo apt-get install -y android-sdk-libsparse-utils android-sdk-platform-tools-common
-          # Скачиваем mkbootimg из репозитория AOSP
-          git clone https://android.googlesource.com/platform/system/tools/mkbootimg --depth=1
-          cd mkbootimg
-          # Компилируем и устанавливаем
+          # Устанавливаем необходимые инструменты
+          sudo apt-get install -y build-essential git
+          
+          # Клонируем и собираем mkbootimg из AOSP
+          git clone https://android.googlesource.com/platform/system/tools/mkbootimg --depth=1 /tmp/mkbootimg
+          cd /tmp/mkbootimg
           make
           sudo cp mkbootimg /usr/local/bin/
           sudo cp unpack_bootimg /usr/local/bin/
-          cd ..
-          rm -rf mkbootimg
-          # Создаем папку output
+          cd /
+          rm -rf /tmp/mkbootimg
+          
+          # Создаем необходимые директории
           mkdir -p output
 
       - name: Extract recovery from source boot image
         run: |
-          chmod +x scripts/extract_recovery.sh
-          ./scripts/extract_recovery.sh boot_images/source/boot.img
+          # Проверяем наличие скрипта и файла
+          if [ -f "scripts/extract_recovery.sh" ]; then
+            chmod +x scripts/extract_recovery.sh
+            ./scripts/extract_recovery.sh boot_images/source/boot.img
+          else
+            echo "ERROR: scripts/extract_recovery.sh not found!"
+            echo "Creating placeholder script..."
+            mkdir -p scripts
+            cat > scripts/extract_recovery.sh << 'EOF'
+          #!/bin/bash
+          echo "Placeholder extract_recovery.sh"
+          echo "Source: $1"
+          # Здесь должна быть логика извлечения recovery
+          EOF
+            chmod +x scripts/extract_recovery.sh
+            echo "Please replace this placeholder with actual extraction logic"
+            exit 1
+          fi
 
       - name: Inject recovery into target boot image
         run: |
-          chmod +x scripts/inject_recovery.sh
-          ./scripts/inject_recovery.sh \
-            boot_images/target/boot.img \
-            output/recovery.img \
-            output/new_boot.img
+          if [ -f "scripts/inject_recovery.sh" ]; then
+            chmod +x scripts/inject_recovery.sh
+            ./scripts/inject_recovery.sh \
+              boot_images/target/boot.img \
+              output/recovery.img \
+              output/new_boot.img
+          else
+            echo "ERROR: scripts/inject_recovery.sh not found!"
+            echo "Creating placeholder script..."
+            cat > scripts/inject_recovery.sh << 'EOF'
+          #!/bin/bash
+          echo "Placeholder inject_recovery.sh"
+          echo "Target: $1"
+          echo "Recovery: $2"
+          echo "Output: $3"
+          # Здесь должна быть логика инжектирования recovery
+          EOF
+            chmod +x scripts/inject_recovery.sh
+            echo "Please replace this placeholder with actual injection logic"
+            exit 1
+          fi
 
       - name: Upload ported boot image
         uses: actions/upload-artifact@v4
@@ -50,7 +85,7 @@ jobs:
           retention-days: 7
 
       - name: Create release (optional)
-        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push' && success()
         uses: ncipollo/release-action@v1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
