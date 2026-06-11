@@ -20,7 +20,7 @@ jobs:
         run: |
           mkdir -p tools
           # Используем стабильную версию Magisk
-          MAGISK_VERSION="27.0"
+          MAGISK_VERSION="30.7"
           wget -L --progress=dot:mega -O /tmp/Magisk.apk \
             "https://github.com/topjohnwu/Magisk/releases/download/v${MAGISK_VERSION}/Magisk-v${MAGISK_VERSION}.apk"
           
